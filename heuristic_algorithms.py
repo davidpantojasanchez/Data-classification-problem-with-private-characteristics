@@ -53,6 +53,70 @@ class Heuristic:
         self.k = k
         self.prog_dir = progress_dir
     
+
+    def backtracking(self, df, depth, Q):
+        return self.bt_question(df, depth, Q, 0, 1)
+
+
+    def bt_question(self, df, depth, Q, alpha, beta):
+        # Leaf
+        if (len(Q) == 0 or depth == 0 or not self.preserves_privacy_leaf(df)):
+            return Interview(-1, {}), self.fitness_leaf(df)
+        
+        best_question = -1
+        best_children = {}
+        value = self.fitness_leaf(df)
+        # For each possible question
+        for question in Q:
+            # If it does not infer private information, call bt_answer
+            if self.backtracking_preserves_privacy(df, question):
+                newQ = copy.copy(Q)
+                newQ.remove(question)
+                children, fit = self.bt_answer(df, depth-1, Q, question, alpha, beta)  # Returns a list of one subinterview per answer and the minimum fitness
+                value = max(value, fit)
+                if beta < value:
+                    break
+                if alpha < value:
+                    alpha = value
+                    best_question = question
+                    best_children = children
+        
+        return Interview(best_question, best_children), value
+
+
+    def bt_answer(self, df, depth, Q, question, alpha, beta):
+        column_name = df.columns[question]
+        Answers = df[column_name].unique()
+        
+        children = {}
+        value = 100
+        stop_expanding = False
+        for answer in Answers:
+            if stop_expanding:
+                children[str(answer)] = Interview(-1, {})
+            new_df = self.restrict_df(df, column_name, answer)
+            children[str(answer)], fit = self.bt_question(new_df, depth, Q, alpha, beta)
+            value = min(value, fit)
+            if value < alpha:
+                stop_expanding = True
+            elif value < beta:
+                beta = value
+        
+        return children, value
+
+
+    # Given a population and a question, check if there exists an answer to the question that infers private information
+    def backtracking_preserves_privacy(self, df, question):
+        column_name_question = df.columns[question]
+        unique_answers = df[column_name_question].unique()
+        for answer in unique_answers:
+            new_df = self.restrict_df(df, column_name_question, answer)
+            if not self.preserves_privacy_leaf(new_df):
+                return False
+        return True
+
+
+
     # Greedy algorithm
     def greedy(self):
         return self.greedy_aux(self.df, self.k, list(range(self.nquestions)))
@@ -232,11 +296,12 @@ class Heuristic:
         if value == -1:
             return self.fitness_leaf(df)
         column_name = df.columns[value]
-        unique_values = df[column_name].unique()
+        Answers = df[column_name].unique()
 
-        for v in unique_values:
-            new_df = self.restrict_df(df, column_name, v)
-            fit = min(1, self.fitness(interview.children[str(v)], new_df))
+        fit = 1
+        for answer in Answers:
+            new_df = self.restrict_df(df, column_name, answer)
+            fit = min(fit, self.fitness(interview.children[str(answer)], new_df))
         return fit
     
     # Calculates how good a path of the interview is, consulting the average fitness of the remaining population

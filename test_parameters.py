@@ -42,9 +42,9 @@ def test_parameters(rounds_ga=100, population_ga=[20], values_k_ga=[10], mutatio
     open(f'instances_{suffix}.txt', 'w')
     open(f'results_{suffix}.txt', 'w')
     for i in range(0, num_instances):
-        population_ins = random.randint(population_ins_min, population_ins_max+1)
+        population_ins = random.randint(population_ins_min, population_ins_max)
         characteristics_ins = random.randint(characteristics_ins_min, characteristics_ins_max+1)
-        private_ins = random.randint(private_ins_min, private_ins_max+1)
+        private_ins = random.randint(private_ins_min, private_ins_max)
 
         print(f'\nProcessing instance {i}')
         with open(f'results_{suffix}.txt', 'a') as file_results:
@@ -111,36 +111,56 @@ def test_parameters(rounds_ga=100, population_ga=[20], values_k_ga=[10], mutatio
                     file_results.write(f'REINFORCED GA average time: {round(rga_avg_t/3.0, 4)}\n')
 
 
+def test_backtracking_algorithm(num_candidate_types, num_questions, k, p_number, num_executions):
+    total_time = 0
+    print(f'\n{num_questions} questions:\n')
+    for i in range(num_executions):
+        df = random_instance(num_candidate_types, num_questions)
+        p = private(df, p_number)
+        heuristic = heuristic_algorithms.Heuristic(df=df, nquestions=int(num_questions), P=p, k=k, progress_dir="")
+        t = time.perf_counter()
+        __, fitness = heuristic.backtracking(df, 10, list(range(num_questions)))
+        t = time.perf_counter() - t
+        total_time += t
+        print(fitness)
+        print(f'Time: {t}')
+    
+    with open(f'exact_algorithm.txt', 'a') as file_results:
+        file_results.write(f'Average time ({num_questions} questions): {total_time / num_executions}\n')
+
+
+
+def test_backtracking_algorithm_time():
+    for i in range(11, 12):
+        test_backtracking_algorithm(500, i, 10, 2, 5)
+
 
 if __name__ == '__main__':
+
     process1 = Process(target=test_parameters, args=(400, [20], [10,11,12,13,14,15], [0.2],
                                                      2000, 4000, 150, 300,
-                                                     4, 8, 2, 3, False,
-                                                     True, True, True, 'H'))
+                                                     4, 9, 2, 3, False,
+                                                     True, True, True, 'AA'))
     process2 = Process(target=test_parameters, args=(400, [20], [10,11,12,13,14,15], [0.2],
                                                      2000, 4000, 150, 300,
-                                                     4, 8, 2, 3, False,
-                                                     True, True, True, 'I'))
+                                                     4, 9, 2, 3, False,
+                                                     True, True, True, 'AB'))
     process3 = Process(target=test_parameters, args=(400, [20], [10,11,12,13,14,15], [0.2],
                                                      2000, 4000, 150, 300,
-                                                     4, 8, 2, 3, False,
-                                                     True, True, True, 'J'))
+                                                     4, 9, 2, 3, False,
+                                                     True, True, True, 'AC'))
     process4 = Process(target=test_parameters, args=(400, [20], [10,11,12,13,14,15], [0.2],
                                                      2000, 4000, 150, 300,
-                                                     4, 8, 2, 3, False,
-                                                     True, True, True, 'K'))
+                                                     4, 9, 2, 3, False,
+                                                     True, True, True, 'AD'))
     process5 = Process(target=test_parameters, args=(400, [20], [10,11,12,13,14,15], [0.2],
                                                      2000, 4000, 150, 300,
-                                                     4, 8, 2, 3, False,
-                                                     True, True, True, 'L'))
+                                                     4, 9, 2, 3, False,
+                                                     True, True, True, 'AE'))
     process6 = Process(target=test_parameters, args=(400, [20], [10,11,12,13,14,15], [0.2],
                                                      2000, 4000, 150, 300,
-                                                     4, 8, 2, 3, False,
-                                                     True, True, True, 'M'))
-    process7 = Process(target=test_parameters, args=(400, [20], [10,11,12,13,14,15], [0.2],
-                                                     2000, 4000, 150, 300,
-                                                     4, 8, 2, 3, False,
-                                                     True, True, True, 'N'))
+                                                     4, 9, 2, 3, False,
+                                                     True, True, True, 'AF'))
     
     process1.start()
     process2.start()
@@ -148,7 +168,6 @@ if __name__ == '__main__':
     process4.start()
     process5.start()
     process6.start()
-    process7.start()
 
     process1.join()
     process2.join()
@@ -156,4 +175,3 @@ if __name__ == '__main__':
     process4.join()
     process5.join()
     process6.join()
-    process7.join()
